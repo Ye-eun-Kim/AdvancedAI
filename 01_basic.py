@@ -105,7 +105,7 @@ def create_resnet18_transfer_model(input_shape, num_classes):
 def run_experiment(batch_size, model_type, augmentation_flag):
     # Define constants
     IMAGE_SIZE = (224, 224)
-    NUM_EPOCHS = 30
+    NUM_EPOCHS = 100
     COLOR_MODE = 'rgb'
     SEED = 123
     
@@ -235,7 +235,7 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     
     # Save the plot to a file and show the plot
     plt.tight_layout()
-    file_save_path = 'Graphs/03/'
+    file_save_path = 'Graphs/04/'
     if os.path.exists(file_save_path):
         pass
     else:
@@ -243,18 +243,16 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     plt.savefig(file_save_path+f'{model_type}_{batch_size}_{augmentation_flag}.png')
 
 # Running experiments
-batch_sizes = [4, 8, 16, 32]
+batch_sizes = [8, 16]
 model_types = ['common', 'resnet50', 'resnet18']
-# model_types = ['common']
-aug_flags = [0, 1]
+aug_flags = [0]
 
 
-# # for model_type in model_types:
-# for batch_size in batch_sizes:
-#     for augmentation_flag in aug_flags:
-#         run_experiment(batch_size, 'common', augmentation_flag)
-run_experiment(8, 'common', 1)
-run_experiment(16, 'common', 1)
+# for model_type in model_types:
+for batch_size in batch_sizes:
+    for augmentation_flag in aug_flags:
+        for model_type in model_types:
+            run_experiment(batch_size, model_type, augmentation_flag)
 
 
 # https://stackoverflow.com/questions/63636565/datagen-flow-from-directory-function
