@@ -202,7 +202,14 @@ def run_experiment(batch_size, model_type, augmentation_flag):
         patience=num_patience,  # Number of epochs with no improvement after which training will be stopped
         restore_best_weights=True
     )
-    
+
+    def scheduler(epoch, lr):
+        if epoch < 10:
+            return lr
+        else:
+            return lr * np.exp(-0.1)
+
+    lr_scheduler = tf.keras.callbacks.LearningRateScheduler(scheduler)
     
     # Train the model
     history = model.fit(
@@ -211,7 +218,7 @@ def run_experiment(batch_size, model_type, augmentation_flag):
         epochs=NUM_EPOCHS,
         validation_data=test_generator,
         validation_steps=math.ceil(len(test_generator)),
-        callbacks=[early_stopping]
+        callbacks=[early_stopping, lr_scheduler]
     )
 
 
@@ -243,7 +250,7 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     
     # Save the plot to a file and show the plot
     plt.tight_layout()
-    file_save_path = 'Graphs/05_200epoch_diffPatience/'
+    file_save_path = 'Graphs/08_resnet50_lesspatience/'
     if os.path.exists(file_save_path):
         pass
     else:
@@ -252,7 +259,8 @@ def run_experiment(batch_size, model_type, augmentation_flag):
 
 # Running experiments
 batch_sizes = [8, 16]
-model_types = ['common', 'resnet50', 'resnet18']
+# model_types = ['common','resnet50', 'resnet18']
+model_types = ['resnet50']
 aug_flags = [0,1]
 
 
