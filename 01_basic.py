@@ -286,9 +286,10 @@ def run_experiment(batch_size, model_type, augmentation_flag):
 
 
 # Running experiments across different configurations
-batch_sizes = [16]
+# batch_sizes = [4,8,16,32]   # used for initial hyperparameter tuning
+batch_sizes = [8, 16]
 model_types = ['common','resnet50', 'resnet18']
-aug_flags = [1]
+aug_flags = [0, 1]
 
 # for model_type in model_types:
 for batch_size in batch_sizes:
