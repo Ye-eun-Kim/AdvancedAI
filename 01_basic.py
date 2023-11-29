@@ -134,6 +134,10 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     IMAGE_SIZE = (224, 224)
     NUM_EPOCHS = 200
     COLOR_MODE = 'rgb'
+    SEED = 123
+    tf.random.set_seed(SEED)
+    np.random.seed(SEED)
+    random.seed(SEED)
     
 
     # Data preparation
@@ -225,12 +229,12 @@ def run_experiment(batch_size, model_type, augmentation_flag):
         patience=num_patience,  # Number of epochs with no improvement after which training will be stopped
         restore_best_weights=True
     )
-    def scheduler(epoch, lr):
-        if epoch < 10:
-            return lr
-        else:
-            return lr * np.exp(-0.1)
-    lr_scheduler = tf.keras.callbacks.LearningRateScheduler(scheduler)
+    # def scheduler(epoch, lr):
+    #     if epoch < 10:
+    #         return lr
+    #     else:
+    #         return lr * np.exp(-0.1)
+    # lr_scheduler = tf.keras.callbacks.LearningRateScheduler(scheduler)
     
     # Model training
     history = model.fit(
@@ -239,7 +243,8 @@ def run_experiment(batch_size, model_type, augmentation_flag):
         epochs=NUM_EPOCHS,
         validation_data=test_generator,
         validation_steps=math.ceil(len(test_generator)),
-        callbacks=[early_stopping, lr_scheduler]
+        callbacks=[early_stopping]
+        # callbacks=[early_stopping, lr_scheduler]    # For enhancement of performance of resnet50
     )
 
 
@@ -271,7 +276,7 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     
     # Save the plot to a file and show the plot
     plt.tight_layout()
-    file_save_path = 'Graphs/09'
+    file_save_path = 'Graphs/11_final/'
     if os.path.exists(file_save_path):
         pass
     else:
@@ -281,9 +286,9 @@ def run_experiment(batch_size, model_type, augmentation_flag):
 
 
 # Running experiments across different configurations
-batch_sizes = [4, 8, 16, 32]
+batch_sizes = [16]
 model_types = ['common','resnet50', 'resnet18']
-aug_flags = [0,1]
+aug_flags = [1]
 
 # for model_type in model_types:
 for batch_size in batch_sizes:
