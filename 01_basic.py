@@ -15,7 +15,7 @@ import random
 
 
 
-# Fix a seed to make result always the same
+# Set a consistent seed for reproducibility
 SEED = 123
 tf.random.set_seed(SEED)
 np.random.seed(SEED)
@@ -23,20 +23,28 @@ random.seed(SEED)
 
 
 
-# Define a function to apply gray scaling to images
+# Function to randomly apply grayscale to images
 def random_grayscale(image, p=0.5):
-    """Apply grayscaling to the image with probability p."""
+    """Apply grayscaling to an image with a specified probability.
+    
+    Parameters:
+    image (tensor): The input image in tensor format.
+    p (float): Probability of applying the grayscaling.
+    """
     if np.random.rand() < p:
         gray_image = tf.image.rgb_to_grayscale(image)
-        # plt.imshow(gray_image/255.0)
         rgb_gray_image = tf.image.grayscale_to_rgb(gray_image)
-        # plt.imshow(rgb_gray_image/255.0)
         return rgb_gray_image 
 
     return image
 
-# Define a function to apply histogram equalization to images
+# Function to apply histogram equalization to images
 def histogram_equalization(image):
+    """Enhance image contrast using histogram equalization.
+    
+    Parameters:
+    image (tensor): The input image in tensor format.
+    """
     # Convert to array
     img_array = img_to_array(image)
     # Convert to YUV color space
@@ -48,19 +56,26 @@ def histogram_equalization(image):
 
     return equalized_img_array
 
-# Define a function to apply preprocessing functions
+# Function combining histogram equalization and random grayscaling
 def custom_preprocessing_function(image):
-    # Apply histogram equalization or other preprocessing steps first
+    """Apply combined preprocessing steps to an image.
+
+    Parameters:
+    image (tensor): The input image in tensor format.
+    """
     image = histogram_equalization(image)
-    # Then apply random grayscaling
     image = random_grayscale(image)
     return image
 
 
-
-# Define models
-# Define a common CNN model
+# Define a basic CNN model
 def create_common_cnn(input_shape, num_classes):
+    """Create a common CNN model with specified input shape and number of classes.
+    
+    Parameters:
+    input_shape (tuple): Shape of the input images.
+    num_classes (int): Number of classes for classification.
+    """
     model = Sequential()
     model.add(Conv2D(32, (3, 3), input_shape=input_shape, activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
@@ -71,27 +86,34 @@ def create_common_cnn(input_shape, num_classes):
     model.add(Dense(num_classes, activation='softmax'))  # Output layer
     return model
 
-# Define a function to create a model using ResNet-50 for transfer learning
+# Define a function for transfer learning using ResNet-50
 def create_resnet50_transfer_model(input_shape, num_classes):
+    """Create a ResNet-50 transfer learning model.
+
+    Parameters:
+    input_shape (tuple): Shape of the input images.
+    num_classes (int): Number of classes for classification.
+    """
     base_model = ResNet50(weights='imagenet', include_top=False, input_shape=input_shape)
-    # Unfreeze the layers of the base model
     for layer in base_model.layers:
         layer.trainable = False
-
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dense(1024, activation='relu')(x)
     predictions = Dense(num_classes, activation='softmax')(x)
-
     model = Model(inputs=base_model.input, outputs=predictions)
     return model
 
 # Define the ResNet18 model for transfer learning
 def create_resnet18_transfer_model(input_shape, num_classes):
-    # Load ResNet model from TensorFlow Hub
+    """Create a ResNet18 transfer learning model from TensorFlow Hub.
+    
+    Parameters:
+    input_shape (tuple): Shape of the input images.
+    num_classes (int): Number of classes for classification.
+    """
     resnet_hub_url = "https://tfhub.dev/google/imagenet/resnet_v2_50/feature_vector/4"  # Example URL for ResNet50
     resnet_hub_model = hub.KerasLayer(resnet_hub_url, input_shape=input_shape, trainable=False)
-
     model = Sequential([
         resnet_hub_model,
         Dense(1024, activation='relu'),
@@ -100,23 +122,25 @@ def create_resnet18_transfer_model(input_shape, num_classes):
     return model
 
 
-
-# Define a function to run experiments varifying batch size and model type
+# Function to run experiments with varying parameters
 def run_experiment(batch_size, model_type, augmentation_flag):
-    # Define constants
+    """Run experiment with specified batch size, model type, and augmentation flag.
+    
+    Parameters:
+    batch_size (int): Number of samples per batch.
+    model_type (str): Type of model to use ('common', 'resnet50', 'resnet18').
+    augmentation_flag (int): Flag to indicate whether to use data augmentation (1) or not (0).
+    """
     IMAGE_SIZE = (224, 224)
     NUM_EPOCHS = 200
     COLOR_MODE = 'rgb'
-    SEED = 123
     
 
     # Data preparation
-    # Define the path of datasets
     dataset_path = 'dataset'
     val_dataset_path = 'val_dataset'
 
-    # Preprocessing and data augmentation setup
-    # Create data generators
+    # Data generators with/without augmentation
     if augmentation_flag == 1:
         datagen = ImageDataGenerator(
         rescale=1./255,
@@ -138,6 +162,8 @@ def run_experiment(batch_size, model_type, augmentation_flag):
         )
     val_datagen = ImageDataGenerator(rescale=1./255)
 
+
+    # Training, testing, and validation generators
     train_generator = datagen.flow_from_directory(
         dataset_path,
         shuffle=True,
@@ -172,46 +198,41 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     # Append the color channel to create input_shape
     input_shape = IMAGE_SIZE+(3,)
 
-    # Select model
+    # Model selection and allocation of num_patience based on type
     if model_type == 'common':
         model = create_common_cnn(input_shape=input_shape, num_classes=4)
-    elif model_type == 'resnet50':
-        model = create_resnet50_transfer_model(input_shape=input_shape, num_classes=4)
+        num_patience = 10
     elif model_type == 'resnet18':
         model = create_resnet18_transfer_model(input_shape=input_shape, num_classes=4)
+        num_patience = 20
+    elif model_type == 'resnet50':
+        model = create_resnet50_transfer_model(input_shape=input_shape, num_classes=4)
+        num_patience = 30
 
-    # To deal with the problem in training of something with augmentation
+    # Data generator configuration based on augmentation flag
     if aug_flags == 0:
         optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     else:
         optimizer = tf.keras.optimizers.Adam(learning_rate=0.0009)
+
     # Compile the model
     model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-    if model_type == 'common':
-        num_patience = 10
-    elif model_type == 'resnet18':
-        num_patience = 20
-    elif model_type == 'resnet50':
-        num_patience = 30
-
-    # Define early stopping criteria
+    # Early stopping and learning rate scheduler setup
     early_stopping = EarlyStopping(
         monitor='val_loss', 
         patience=num_patience,  # Number of epochs with no improvement after which training will be stopped
         restore_best_weights=True
     )
-
     def scheduler(epoch, lr):
         if epoch < 10:
             return lr
         else:
             return lr * np.exp(-0.1)
-
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(scheduler)
     
-    # Train the model
+    # Model training
     history = model.fit(
         train_generator,
         steps_per_epoch=math.ceil(len(train_generator)),  # This makes error in testing, so I delete it(training with default)
@@ -222,9 +243,8 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     )
 
 
-    # Create subplots
+    # Plotting accuracy and loss
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-
     # Plot training & validation accuracy values
     ax1.plot(history.history['accuracy'], label='Train')
     ax1.plot(history.history['val_accuracy'], label='Test')
@@ -232,7 +252,6 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     ax1.set_ylabel('Accuracy')
     ax1.set_xlabel('Epoch')
     ax1.legend(loc='upper left')
-
     # Plot training & validation loss values
     ax2.plot(history.history['loss'], label='Train')
     ax2.plot(history.history['val_loss'], label='Test')
@@ -241,6 +260,8 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     ax2.set_xlabel('Epoch')
     ax2.legend(loc='upper left')
 
+
+    # Evaluation and saving results
     val_loss, val_accuracy = model.evaluate(val_generator, steps=len(val_generator))
     print(f'val_loss: {val_loss}, val_accuracy: {val_accuracy}')
     
@@ -257,18 +278,15 @@ def run_experiment(batch_size, model_type, augmentation_flag):
         os.mkdir(file_save_path)
     plt.savefig(file_save_path+f'{model_type}_{batch_size}_{augmentation_flag}_{num_patience}.png')
 
-# Running experiments
+
+
+# Running experiments across different configurations
 batch_sizes = [4, 8, 16, 32]
 model_types = ['common','resnet50', 'resnet18']
 aug_flags = [0,1]
-
 
 # for model_type in model_types:
 for batch_size in batch_sizes:
     for augmentation_flag in aug_flags:
         for model_type in model_types:
             run_experiment(batch_size, model_type, augmentation_flag)
-
-
-# https://stackoverflow.com/questions/63636565/datagen-flow-from-directory-function
-# https://stackoverflow.com/questions/59864408/tensorflowyour-input-ran-out-of-data
