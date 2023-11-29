@@ -250,7 +250,7 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     
     # Save the plot to a file and show the plot
     plt.tight_layout()
-    file_save_path = 'Graphs/08_resnet50_lesspatience/'
+    file_save_path = 'Graphs/09'
     if os.path.exists(file_save_path):
         pass
     else:
@@ -258,9 +258,8 @@ def run_experiment(batch_size, model_type, augmentation_flag):
     plt.savefig(file_save_path+f'{model_type}_{batch_size}_{augmentation_flag}_{num_patience}.png')
 
 # Running experiments
-batch_sizes = [8, 16]
-# model_types = ['common','resnet50', 'resnet18']
-model_types = ['resnet50']
+batch_sizes = [4, 8, 16, 32]
+model_types = ['common','resnet50', 'resnet18']
 aug_flags = [0,1]
 
 
