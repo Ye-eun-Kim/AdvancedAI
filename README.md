@@ -69,5 +69,8 @@ Adjust the batch sizes, model types (`'common'`, `'resnet50'`, `'resnet18'`), an
 ## Results
 The results, including accuracy and loss plots, will be saved in the 'Graphs' directory.
 
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ## Contact
 For any queries, please reach out to [july215215@gmail.com](july215215@gmail.com).
